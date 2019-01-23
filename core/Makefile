@@ -678,6 +678,16 @@ else
 endif
 
 # -----------------------------------------------------------------
+# dtb
+
+ifdef BOARD_PREBUILT_DTBIMAGE_DIR
+INSTALLED_DTBIMAGE_TARGET := $(PRODUCT_OUT)/dtb.img
+$(INSTALLED_DTBIMAGE_TARGET) : $(addprefix $(BOARD_PREBUILT_DTBIMAGE_DIR)/,\
+	$(call find-files-in-subdirs,$(BOARD_PREBUILT_DTBIMAGE_DIR),*.dtb,.))
+	cat $^ > $@
+endif
+
+# -----------------------------------------------------------------
 # the ramdisk
 BOOT_RAMDISK_COMPRESSOR := $(MINIGZIP)
 RECOVERY_RAMDISK_COMPRESSOR := $(MINIGZIP)
@@ -717,6 +727,10 @@ ifneq ($(strip $(TARGET_NO_KERNEL)),true)
 INTERNAL_BOOTIMAGE_ARGS := \
 	$(addprefix --second ,$(INSTALLED_2NDBOOTLOADER_TARGET)) \
 	--kernel $(INSTALLED_KERNEL_TARGET)
+
+ifdef BOARD_INCLUDE_DTB_IN_BOOTIMG
+  INTERNAL_BOOTIMAGE_ARGS += --dtb $(INSTALLED_DTBIMAGE_TARGET)
+endif
 
 ifneq ($(BOARD_BUILD_SYSTEM_ROOT_IMAGE),true)
 INTERNAL_BOOTIMAGE_ARGS += --ramdisk $(INSTALLED_RAMDISK_TARGET)
@@ -1339,6 +1353,9 @@ endif
 ifdef BOARD_INCLUDE_RECOVERY_DTBO
   INTERNAL_RECOVERYIMAGE_ARGS += --recovery_dtbo $(BOARD_PREBUILT_DTBOIMAGE)
 endif
+ifdef BOARD_INCLUDE_DTB_IN_BOOTIMG
+  INTERNAL_RECOVERYIMAGE_ARGS += --dtb $(INSTALLED_DTBIMAGE_TARGET)
+endif
 
 # Keys authorized to sign OTA packages this build will accept.  The
 # build always uses dev-keys for this; release packaging tools will
@@ -1436,6 +1453,10 @@ endif
 ifeq (true,$(BOARD_AVB_ENABLE))
 $(INSTALLED_BOOTIMAGE_TARGET) : $(AVBTOOL) $(BOARD_AVB_BOOT_KEY_PATH)
 endif
+ifdef BOARD_INCLUDE_DTB_IN_BOOTIMG
+$(INSTALLED_BOOTIMAGE_TARGET): $(INSTALLED_DTBIMAGE_TARGET)
+endif
+
 $(INSTALLED_BOOTIMAGE_TARGET): $(MKBOOTFS) $(MKBOOTIMG) $(MINIGZIP) $(ADBD) \
 		$(INSTALLED_RAMDISK_TARGET) \
 		$(INTERNAL_RECOVERYIMAGE_FILES) \
@@ -1451,6 +1472,9 @@ $(INSTALLED_BOOTIMAGE_TARGET): $(MKBOOTFS) $(MKBOOTIMG) $(MINIGZIP) $(ADBD) \
 		$(call build-recoveryramdisk)
 		$(hide) $(MKBOOTFS) -d $(TARGET_OUT) $(TARGET_RECOVERY_ROOT_OUT) | $(RECOVERY_RAMDISK_COMPRESSOR) > $(recovery_ramdisk)
 		$(call build-recoveryimage-target, $@)
+endif
+ifdef BOARD_INCLUDE_DTB_IN_BOOTIMG
+$(INSTALLED_RECOVERYIMAGE_TARGET): $(INSTALLED_DTBIMAGE_TARGET)
 endif
 
 $(recovery_uncompressed_ramdisk): $(MKBOOTFS) $(ADBD) \
@@ -2628,6 +2652,9 @@ endif
 ifdef BOARD_INCLUDE_RECOVERY_DTBO
 	$(hide) cp $(INSTALLED_DTBOIMAGE_TARGET) $(zip_root)/$(PRIVATE_RECOVERY_OUT)/recovery_dtbo
 endif
+ifdef BOARD_INCLUDE_DTB_IN_BOOTIMG
+	$(hide) cp $(INSTALLED_DTBIMAGE_TARGET) $(zip_root)/$(PRIVATE_RECOVERY_OUT)/dtb
+endif
 ifdef INTERNAL_KERNEL_CMDLINE
 	$(hide) echo "$(INTERNAL_KERNEL_CMDLINE)" > $(zip_root)/$(PRIVATE_RECOVERY_OUT)/cmdline
 endif
@@ -2655,6 +2682,9 @@ ifdef INSTALLED_KERNEL_TARGET
 endif
 ifdef INSTALLED_2NDBOOTLOADER_TARGET
 	$(hide) cp $(INSTALLED_2NDBOOTLOADER_TARGET) $(zip_root)/BOOT/second
+endif
+ifdef INSTALLED_DTBIMAGE_TARGET
+	$(hide) cp $(INSTALLED_DTBIMAGE_TARGET) $(zip_root)/BOOT/dtb
 endif
 ifdef INTERNAL_KERNEL_CMDLINE
 	$(hide) echo "$(INTERNAL_KERNEL_CMDLINE)" > $(zip_root)/BOOT/cmdline

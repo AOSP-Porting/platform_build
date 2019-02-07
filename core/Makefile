@@ -682,8 +682,7 @@ endif
 
 ifdef BOARD_PREBUILT_DTBIMAGE_DIR
 INSTALLED_DTBIMAGE_TARGET := $(PRODUCT_OUT)/dtb.img
-$(INSTALLED_DTBIMAGE_TARGET) : $(addprefix $(BOARD_PREBUILT_DTBIMAGE_DIR)/,\
-	$(call find-files-in-subdirs,$(BOARD_PREBUILT_DTBIMAGE_DIR),*.dtb,.))
+$(INSTALLED_DTBIMAGE_TARGET) : $(sort $(wildcard $(BOARD_PREBUILT_DTBIMAGE_DIR)/*.dtb))
 	cat $^ > $@
 endif
 

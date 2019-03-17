@@ -680,8 +680,8 @@ endif
 # -----------------------------------------------------------------
 # dtb
 
-ifdef BOARD_PREBUILT_DTBIMAGE_DIR
 INSTALLED_DTBIMAGE_TARGET := $(PRODUCT_OUT)/dtb.img
+ifdef BOARD_PREBUILT_DTBIMAGE_DIR
 $(INSTALLED_DTBIMAGE_TARGET) : $(sort $(wildcard $(BOARD_PREBUILT_DTBIMAGE_DIR)/*.dtb))
 	cat $^ > $@
 endif
